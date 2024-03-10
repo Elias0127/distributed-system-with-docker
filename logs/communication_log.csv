@@ -1,0 +1,4 @@
+Type,Time(s),Source_Ip,Destination_Ip,Source_Port,Destination_Port,Protocol,Length (bytes),Flags (hex)
+Unicast,9.036064147949219e-05,172.19.0.3,172.19.0.2,58422,12345,TCP,21,0x010
+Unicast,0.002941131591796875,172.19.0.3,172.19.0.2,58422,12345,TCP,21,0x010
+Unicast,5.364418029785156e-05,172.19.0.3,172.19.0.2,58422,12345,TCP,19,0x010

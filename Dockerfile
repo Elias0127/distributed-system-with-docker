@@ -6,4 +6,5 @@ COPY node3.py /app/node3.py
 COPY node4.py /app/node4.py
 
 WORKDIR /app
-CMD ["python", "server.py"]  # This will run the server by default
+RUN mkdir -p /app/logs && chmod 777 /app/logs
+CMD ["python", "-u", "server.py"]

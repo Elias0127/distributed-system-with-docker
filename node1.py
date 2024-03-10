@@ -1,8 +1,21 @@
+import datetime
+import os
 import socket
 import sys
+import csv
+import time
 
 # Unique identifier for this node
 node_id = "node1"
+
+log_file_path = '/app/logs/communication_log.csv'
+
+
+def log_message(message_type, elapsed_time, source_ip, dest_ip, source_port, dest_port, protocol, length, flags):
+    with open(log_file_path, mode='a', newline='') as log_file:
+        log_writer = csv.writer(log_file, delimiter=',')
+        log_writer.writerow([message_type, elapsed_time, source_ip,
+                            dest_ip, source_port, dest_port, protocol, length, flags])
 
 
 def connect_to_server(host, port):
@@ -19,21 +32,40 @@ def connect_to_server(host, port):
 
 
 def main():
-    host = "server"  # Use the container name of the server
+    server_hostname = 'server'
     port = 12345
-    node_socket = connect_to_server(host, port)
+
+# Retrieve the IP address using the hostname
+    try:
+        server_ip = socket.gethostbyname(server_hostname)
+        print(f"Resolved {server_hostname} to IP address: {server_ip}")
+    except socket.error as e:
+        print(f"Error resolving {server_hostname}: {e}")
+
+    node_socket = connect_to_server(server_ip, port)
+
     if node_socket:
         try:
+            local_ip = socket.gethostbyname(socket.gethostname())
+            local_port = node_socket.getsockname()[1]
+
             # Send a greeting message to the server
+            start_time = time.time()  # Start the timer
             greeting = f"{node_id}: Hello, server!"
             node_socket.send(greeting.encode('utf-8'))
+            end_time = time.time()  # End the timer
+
+            # Calculate the duration and log the message
+            transmission_time = end_time - start_time
+            log_message('Unicast', transmission_time, local_ip, host, local_port,
+                        port, 'TCP', len(greeting), '0x010')
 
             while True:
                 message = node_socket.recv(1024).decode('utf-8')
                 if message:
                     print(f"{node_id} received message from server: {message}")
                     sys.stdout.flush()
-                    # Only send a response if the message is not an acknowledgment
+                    # Respond to the server's message but don't log this response
                     if "Acknowledged" not in message:
                         response = f"{node_id}: Acknowledged"
                         node_socket.send(response.encode('utf-8'))

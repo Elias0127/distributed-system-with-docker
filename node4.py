@@ -1,8 +1,17 @@
 import socket
 import sys
+import csv
+import time
 
 # Unique identifier for this node
 node_id = "node4"
+
+
+def log_message(message_type, source_ip, dest_ip, source_port, dest_port, protocol, length, flags):
+    with open('/app/logs/communication_log.csv', mode='a', newline='') as log_file:
+        log_writer = csv.writer(log_file, delimiter=',')
+        log_writer.writerow([message_type, time.time(
+        ), source_ip, dest_ip, source_port, dest_port, protocol, length, flags])
 
 
 def connect_to_server(host, port):
@@ -19,7 +28,7 @@ def connect_to_server(host, port):
 
 
 def main():
-    host = "server"  # Use the container name of the server
+    host = socket.gethostbyname('server')
     port = 12345
     node_socket = connect_to_server(host, port)
     if node_socket:
@@ -27,6 +36,8 @@ def main():
             # Send a greeting message to the server
             greeting = f"{node_id}: Hello, server!"
             node_socket.send(greeting.encode('utf-8'))
+            log_message('Unicast', 'node_ip', host, 'node_port',
+                        port, 'TCP', len(greeting), '0x010')
 
             while True:
                 message = node_socket.recv(1024).decode('utf-8')
@@ -37,6 +48,8 @@ def main():
                     if "Acknowledged" not in message:
                         response = f"{node_id}: Acknowledged"
                         node_socket.send(response.encode('utf-8'))
+                        log_message('Unicast', host, 'node_ip', port,
+                                    'node_port', 'TCP', len(response), '0x010')
                 else:
                     break
         except Exception as e:
