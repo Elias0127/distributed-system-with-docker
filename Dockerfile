@@ -11,6 +11,7 @@ COPY UnicastProtocol /app/UnicastProtocol
 # Copy Broadcast protocol files
 COPY BroadcastProtocol /app/BroadcastProtocol
 
+
 WORKDIR /app/UnicastProtocol
 RUN chmod 777 logs
 CMD ["python", "-u", "server.py"]
