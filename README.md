@@ -44,7 +44,7 @@ The project is containerized using Docker, and each component runs in its own Do
    docker run --name node3 --network proj1-distributed-network -v "$(pwd)"/logs:/app/logs proj1-distributed-network:latest python -u /app/BroadcastProtocol/node3.py
    docker run --name node4 --network proj1-distributed-network -v "$(pwd)"/logs:/app/logs proj1-distributed-network:latest python -u /app/BroadcastProtocol/node4.py
    ```
-2. Start the master server:
+2. Broadcast a message from the master server:
    ```bash
    docker exec server python /app/BroadcastProtocol/broadcast_message.py
    ```
