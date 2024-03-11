@@ -1,12 +1,19 @@
 import socket
 import sys
-import time
-import csv
+
 
 node_id = "node2"
 
 
 def connect_to_server(host, port):
+    """
+    Connect to the server and send a registration message.
+    Args:
+        host (str): The server's host address.
+        port (int): The server's port number.
+    Returns:
+        socket.socket or None: The client's socket if connection is successful, None otherwise.
+    """
     node_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         node_socket.connect((host, port))
@@ -19,8 +26,14 @@ def connect_to_server(host, port):
         return None
 
 
-
 def send_message_to(node_socket, recipient_id, message):
+    """
+    Send a message to a specific recipient.
+    Args:
+        node_socket (socket.socket): The client's socket.
+        recipient_id (str): The ID of the recipient node.
+        message (str): The message to send.
+    """
     full_message = f"{node_id}:{recipient_id}:{message}"
     node_socket.send(full_message.encode('utf-8'))
 

@@ -1,20 +1,19 @@
 import socket
 import sys
-import time
-import csv
+
 
 node_id = "node4"
 
 
-def log_message(message_type, source_ip, dest_ip, source_port, dest_port, protocol, length, flags):
-    # Log format may need to be updated based on the specific format you're looking for
-    with open('/app/logs/communication_log.csv', mode='a', newline='') as log_file:
-        log_writer = csv.writer(log_file, delimiter=',')
-        log_writer.writerow([message_type, time.time(
-        ), source_ip, dest_ip, source_port, dest_port, protocol, length, flags])
-
-
 def connect_to_server(host, port):
+    """
+    Connect to the server.
+    Args:
+        host (str): The server's host address.
+        port (int): The server's port number.
+    Returns:
+        socket.socket or None: The client's socket if connection is successful, None otherwise.
+    """
     node_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         node_socket.connect((host, port))
@@ -26,6 +25,13 @@ def connect_to_server(host, port):
 
 
 def send_message_to(node_socket, recipient_id, message):
+    """
+    Send a message to a specific recipient.
+    Args:
+        node_socket (socket.socket): The client's socket.
+        recipient_id (str): The ID of the recipient node.
+        message (str): The message to send.
+    """
     full_message = f"{node_id}:{recipient_id}:{message}"
     node_socket.send(full_message.encode('utf-8'))
 

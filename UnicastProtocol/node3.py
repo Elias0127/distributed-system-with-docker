@@ -1,24 +1,25 @@
 import socket
 import sys
-import time
-import csv
+
 
 node_id = "node3"
 
 
-def log_message(message_type, source_ip, dest_ip, source_port, dest_port, protocol, length, flags):
-    # Log format may need to be updated based on the specific format you're looking for
-    with open('/app/logs/communication_log.csv', mode='a', newline='') as log_file:
-        log_writer = csv.writer(log_file, delimiter=',')
-        log_writer.writerow([message_type, time.time(
-        ), source_ip, dest_ip, source_port, dest_port, protocol, length, flags])
-
-
 def connect_to_server(host, port):
+    """
+    Connect to the server and send a registration message.
+    Args:
+        host (str): The server's host address.
+        port (int): The server's port number.
+    Returns:
+        socket.socket or None: The client's socket if connection is successful, None otherwise.
+    """
     node_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         node_socket.connect((host, port))
         print(f"{node_id} connected to server at {host}:{port}")
+        # Send registration message
+        node_socket.send(f"register:{node_id}".encode('utf-8'))
         return node_socket
     except socket.error as e:
         print(f"{node_id} error connecting to server: {e}", file=sys.stderr)
@@ -26,6 +27,13 @@ def connect_to_server(host, port):
 
 
 def send_message_to(node_socket, recipient_id, message):
+    """
+    Send a message to a specific recipient.
+    Args:
+        node_socket (socket.socket): The client's socket.
+        recipient_id (str): The ID of the recipient node.
+        message (str): The message to send.
+    """
     full_message = f"{node_id}:{recipient_id}:{message}"
     node_socket.send(full_message.encode('utf-8'))
 
@@ -39,13 +47,16 @@ def main():
 
     if node_socket:
         try:
-            # Example sending a message to node2 from this node
-            send_message_to(node_socket, "node2", "Hello from nodeX!")
+            # Example: node3 sends a message to node1
+            send_message_to(node_socket, "node1", "Hello from node3!")
 
+            # Node3 receives a message from node1 (or any other node)
             while True:
                 response = node_socket.recv(1024).decode('utf-8')
                 if response:
-                    print(f"{node_id} received message: {response}")
+                    sender_id, content = response.split(':', 1)
+                    print(f"{node_id} received message from {sender_id}: {content}")
+
                 else:
                     break
         except Exception as e:
