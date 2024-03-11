@@ -9,7 +9,7 @@ import time
 clients = {}
 clients_lock = threading.Lock()
 
-log_file_path = '/app/logs/communication_log.csv'
+log_file_path = '/app/UnicastProtocol/logs/communication_log.csv'
 
 # Initialize file_exists at the top level, not inside the function
 file_exists = os.path.isfile(log_file_path)
@@ -61,8 +61,6 @@ def handle_client(client_socket, addr, host, port):
         print(f"Unregistered {node_id}", flush=True)
 
 
-
-
 def parse_message(message):
     # Assumes the message format is "sender_id:recipient_id:content"
     parts = message.split(':', 2)
@@ -102,7 +100,7 @@ def main():
         while True:
             client_socket, addr = server_socket.accept()
             client_thread = threading.Thread(
-                target=handle_client, args=(client_socket, addr, host, port))  
+                target=handle_client, args=(client_socket, addr, host, port))
             client_thread.start()
     except KeyboardInterrupt:
         print("Shutting down server...", flush=True)

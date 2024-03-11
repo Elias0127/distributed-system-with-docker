@@ -5,12 +5,12 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     telnet
 
-COPY server.py /app/server.py
-COPY node1.py /app/node1.py
-COPY node2.py /app/node2.py
-COPY node3.py /app/node3.py
-COPY node4.py /app/node4.py
+# Copy Unicast protocol files and logs
+COPY UnicastProtocol /app/UnicastProtocol
 
-WORKDIR /app
-RUN mkdir -p /app/logs && chmod 777 /app/logs
+# Copy Broadcast protocol files
+COPY BroadcastProtocol /app/BroadcastProtocol
+
+WORKDIR /app/UnicastProtocol
+RUN chmod 777 logs
 CMD ["python", "-u", "server.py"]
