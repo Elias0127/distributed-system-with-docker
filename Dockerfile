@@ -1,4 +1,10 @@
 FROM python:3.8
+
+# Install ping and telnet
+RUN apt-get update && apt-get install -y \
+    iputils-ping \
+    telnet
+
 COPY server.py /app/server.py
 COPY node1.py /app/node1.py
 COPY node2.py /app/node2.py

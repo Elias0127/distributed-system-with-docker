@@ -1,13 +1,13 @@
 import socket
 import sys
-import csv
 import time
+import csv
 
-# Unique identifier for this node
 node_id = "node3"
 
 
 def log_message(message_type, source_ip, dest_ip, source_port, dest_port, protocol, length, flags):
+    # Log format may need to be updated based on the specific format you're looking for
     with open('/app/logs/communication_log.csv', mode='a', newline='') as log_file:
         log_writer = csv.writer(log_file, delimiter=',')
         log_writer.writerow([message_type, time.time(
@@ -19,47 +19,40 @@ def connect_to_server(host, port):
     try:
         node_socket.connect((host, port))
         print(f"{node_id} connected to server at {host}:{port}")
-        sys.stdout.flush()
         return node_socket
     except socket.error as e:
-        print(f"{node_id} error connecting to server: {e}")
-        sys.stdout.flush()
+        print(f"{node_id} error connecting to server: {e}", file=sys.stderr)
         return None
 
 
+def send_message_to(node_socket, recipient_id, message):
+    full_message = f"{node_id}:{recipient_id}:{message}"
+    node_socket.send(full_message.encode('utf-8'))
+
+
 def main():
-    # Use the container name of the server
-    host = socket.gethostbyname('server')
+    server_hostname = 'server'
     port = 12345
-    node_socket = connect_to_server(host, port)
+
+    server_ip = socket.gethostbyname(server_hostname)
+    node_socket = connect_to_server(server_ip, port)
+
     if node_socket:
         try:
-            # Send a greeting message to the server
-            greeting = f"{node_id}: Hello, server!"
-            node_socket.send(greeting.encode('utf-8'))
-            log_message('Unicast', 'node_ip', host, 'node_port',
-                        port, 'TCP', len(greeting), '0x010')
+            # Example sending a message to node2 from this node
+            send_message_to(node_socket, "node2", "Hello from nodeX!")
 
             while True:
-                message = node_socket.recv(1024).decode('utf-8')
-                if message:
-                    print(f"{node_id} received message from server: {message}")
-                    sys.stdout.flush()
-                    # Only send a response if the message is not an acknowledgment
-                    if "Acknowledged" not in message:
-                        response = f"{node_id}: Acknowledged"
-                        node_socket.send(response.encode('utf-8'))
-                        log_message('Unicast', host, 'node_ip', port,
-                                    'node_port', 'TCP', len(response), '0x010')
+                response = node_socket.recv(1024).decode('utf-8')
+                if response:
+                    print(f"{node_id} received message: {response}")
                 else:
                     break
         except Exception as e:
-            print(f"{node_id} error during communication: {e}")
-            sys.stdout.flush()
+            print(f"{node_id} error during communication: {e}", file=sys.stderr)
         finally:
             node_socket.close()
             print(f"{node_id} disconnected from server")
-            sys.stdout.flush()
 
 
 if __name__ == "__main__":

@@ -2,14 +2,12 @@ import os
 from datetime import datetime
 import threading
 import socket
-import sys
 import csv
 import time
 
 # Dictionary to store the clients connected to the server. Key: node ID, Value: client socket
 clients = {}
 clients_lock = threading.Lock()
-
 
 log_file_path = '/app/logs/communication_log.csv'
 
@@ -24,6 +22,7 @@ if not file_exists:
                    "Destination_Port", "Protocol", "Length (bytes)", "Flags (hex)"]
         log_writer.writerow(headers)
 
+
 def log_message(message_type, elapsed_time, source_ip, dest_ip, source_port, dest_port, protocol, length, flags):
     with open(log_file_path, mode='a', newline='') as log_file:
         log_writer = csv.writer(log_file, delimiter=',')
@@ -31,45 +30,63 @@ def log_message(message_type, elapsed_time, source_ip, dest_ip, source_port, des
                             dest_ip, source_port, dest_port, protocol, length, flags])
 
 
-
-def handle_client(client_socket, addr, host):
-    with clients_lock:
-        node_id = f"node_{len(clients) + 1}"
-        clients[node_id] = client_socket
-    print(f"Registered {node_id} with address {addr}", flush=True)
-
+def handle_client(client_socket, addr, host, port):
+    node_id = None
     try:
         while True:
-            start_time = time.time()
             message = client_socket.recv(1024).decode('utf-8')
-            end_time = time.time()
-            transmission_time = end_time - start_time
             if message:
-                print(f"Message from {node_id} ({addr}): {message}")
-                # Log the received message here
-                log_message('Unicast', transmission_time, addr[0], host, addr[1], '12345', 'TCP', len(message), '0x010')
-                if "Acknowledged" not in message:
-                    response = f"Received: {message}"
-                    send_message_to_node(node_id, response)
-                    # Don't log the acknowledgment
+                if message.startswith("register:"):
+                    node_id = message.split(":")[1]
+                    with clients_lock:
+                        clients[node_id] = (client_socket, addr)
+                    print(
+                        f"Registered {node_id} with address {addr}", flush=True)
+                elif node_id:
+                    sender_id, recipient_id, content = parse_message(message)
+                    # Log message received from sender
+                    log_message("Received", time.time(
+                    ), addr[0], host, addr[1], port, 'TCP', len(message), '0x010')
+                    # Route the message to the recipient
+                    route_message(sender_id, recipient_id, content)
             else:
                 break
     except ConnectionResetError:
         print(f"Connection lost with {node_id}", flush=True)
     finally:
         with clients_lock:
-            del clients[node_id]
+            if node_id in clients:
+                del clients[node_id]
         client_socket.close()
         print(f"Unregistered {node_id}", flush=True)
 
 
-def send_message_to_node(node_id, message):
+
+
+def parse_message(message):
+    # Assumes the message format is "sender_id:recipient_id:content"
+    parts = message.split(':', 2)
+    return parts[0], parts[1], parts[2]
+
+
+def route_message(sender_id, recipient_id, content):
     with clients_lock:
-        if node_id in clients:
-            client_socket = clients[node_id]
-            client_socket.send(message.encode('utf-8'))
+        recipient_info = clients.get(recipient_id)
+        if recipient_info:
+            recipient_socket, recipient_addr = recipient_info
+            try:
+                full_message = f"{sender_id}:{content}"
+                recipient_socket.send(full_message.encode('utf-8'))
+
+                # Log message sent to recipient
+                if recipient_addr:  # Ensure we have the address for logging
+                    log_message("Sent", time.time(
+                    ), recipient_addr[0], recipient_addr[0], recipient_addr[1], recipient_addr[1], 'TCP', len(full_message), '0x010')
+            except socket.error as e:
+                print(
+                    f"Error sending message to {recipient_id}: {e}", flush=True)
         else:
-            print(f"No client found with node ID {node_id}", flush=True)
+            print(f"No client found with node ID {recipient_id}", flush=True)
 
 
 def main():
@@ -85,7 +102,7 @@ def main():
         while True:
             client_socket, addr = server_socket.accept()
             client_thread = threading.Thread(
-                target=handle_client, args=(client_socket, addr, host))
+                target=handle_client, args=(client_socket, addr, host, port))  
             client_thread.start()
     except KeyboardInterrupt:
         print("Shutting down server...", flush=True)
